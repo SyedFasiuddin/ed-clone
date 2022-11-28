@@ -1,9 +1,18 @@
 import sys
+import re
 
 insert_mode_ = False    # default when ed starts
 buffer_modified_ = False    # empty buffer is started
 
+file_name_ = ""
 lines = [] # empty buffer
+
+prompt_ = ""
+cmd_buf_ = ""
+
+first_addr_ = 0
+second_addr_ = 0
+last_addr_ = 0
 
 def handel_command_line_args(argv):
     if len(argv) > 1:
@@ -27,8 +36,47 @@ def handel_command_line_args(argv):
                   "Try 'ed --help' for more information."
                  )
             exit(1)
+        else:
+            global file_name_
+            file_name_ = argv[1]
+    return
 
-def insert_mode():
+def open_file_get_all_content_into_buf():
+    global lines
+    global last_addr_
+
+    if file_name_ != "":
+        fp = open(file_name_, "r")
+        for line in fp:
+            lines.append(line)
+        fp.close()
+        last_addr_ = len(lines)
+    return
+
+def write_buf_to_file():
+    # open file to write
+    fp = open(file_name_, "a")
+    # clear everything in file
+    fp.seek(0)
+    fp.truncate()
+
+    # write entire buffer to file
+    for line in lines:
+        fp.write(line)
+
+    # close file
+    fp.close()
+
+    # set buffer back to unmodified
+    global buffer_modified_
+    buffer_modified_ = False
+    return
+
+def insert_text_into_buf(mode):
+    global buffer_modified_
+    global insert_mode_
+    global last_addr_
+
     insert_mode_ = True
 
     while(insert_mode_):
@@ -38,33 +86,109 @@ def insert_mode():
             insert_mode_ = False
             continue
 
-        global buffer_modified_
         buffer_modified_ = True
-        lines.append(line)
+        if mode == "i":
+            lines.insert(last_addr_ - 1, line + "\n")
+        elif mode == "a":
+            lines.insert(last_addr_, line + "\n")
+        last_addr_ = last_addr_ + 1
 
     return
+
+def check_addr_range():
+    if first_addr_ > second_addr_ or second_addr_ > last_addr_:
+        print("?")
+        return False
+    return True
 
 def print_buffer():
-    for line in lines:
-        print(line)
+    f = first_addr_ - 1
+    s = second_addr_ - 1
+    # if check_addr_range():
+    #     return
+    while(f <= s):
+        print(lines[f], end="")
+        f = f + 1
     return
+
+def delete_lines():
+    return
+
+def parse_cmd_buf(buf):
+    global first_addr_
+    global second_addr_
+    global last_addr_
+    global prompt_
+    global file_name_
+    global lines
+
+    # prompt string
+    r = re.search(r"P (.*)$", buf)
+    if r:
+        prompt_ = r.group(1)
+        return "P"
+
+    # edit this file
+    r = re.search(r"e (.*)$", buf)
+    if r:
+        lines = []
+        file_name_ = r.group(1)
+        return "e"
+
+    # set file name
+    r = re.search(r"f (.*)$", buf)
+    if r:
+        file_name_ = r.group(1)
+        return "f"
+
+    # parse things with two addresses
+    r = re.search(r"([0-9].*),([0-9].*)([a-z].*$)", buf)
+    if r:
+        first_addr_ = int(r.group(1))
+        second_addr_ = int(r.group(2))
+        return r.group(3)
+
+    # parse things with one address
+    r = re.search(r"([0-9].*)([a-z].*$)", buf)
+    if r:
+        if len(r.group(2)) > 1:
+            return ""
+        last_addr_ = int(r.group(1))
+        return r.group(2)
+
+    # parse without any address
+    r = re.search(r"([a-z].*$)", buf)
+    if r:
+        first_addr_ = second_addr_ = last_addr_
+        return r.group(1)
+    return ""
     
 def main_loop():
+    open_file_get_all_content_into_buf()
+    global cmd_buf_
+    global prompt_
     while(True):
-        i = input("")
-        if len(i) > 1:
-            print("?")
-        elif i == "i":
-            insert_mode()
-        elif i == "p":
+        cmd_buf_ = input(prompt_)
+        c = parse_cmd_buf(cmd_buf_)
+        if c == "a":
+            insert_text_into_buf(c)
+        elif c == "i":
+            insert_text_into_buf(c)
+        elif c == "d":
+            delete_lines()
+        elif c == "p":
             print_buffer()
-        elif i == "q":
+        elif c == "P":
+            continue
+        elif c == "w" or c == "W":
+            write_buf_to_file()
+        elif c == "q" or c == "Q":
             if not buffer_modified_:
                 exit(0)
             confirm_quit = input("Warning: buffer modified\n")
             if confirm_quit == "q":
                 exit(0)
-            else: i = confirm_quit
+            else: cmd_buf_ = confirm_quit
         else:
             print("?")
 
