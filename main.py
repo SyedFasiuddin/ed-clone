@@ -8,6 +8,7 @@ file_name_ = ""
 lines = [] # empty buffer
 
 prompt_ = ""
+prompt_on_ = False
 cmd_buf_ = ""
 
 first_addr_ = 0
@@ -46,29 +47,39 @@ def open_file_get_all_content_into_buf():
     global last_addr_
 
     if file_name_ != "":
-        fp = open(file_name_, "r")
-        for line in fp:
-            lines.append(line)
-        fp.close()
-        last_addr_ = len(lines)
+        try:
+            fp = open(file_name_, "r")
+            for line in fp:
+                lines.append(line)
+            fp.close()
+            last_addr_ = len(lines)
+        except:
+            # if file is not present thenn create
+            print("No such file or directory")
+            with open(file_name_, "w") as fp:
+                pass
     return
 
 def write_buf_to_file():
+    global buffer_modified_
+
+    if not file_name_:
+        return
     # open file to write
-    fp = open(file_name_, "a")
-    # clear everything in file
-    fp.seek(0)
-    fp.truncate()
+    print(file_name_)
+    with open(file_name_, "w") as fp:
+        # clear everything in file
+        fp.seek(0)
+        fp.truncate()
 
-    # write entire buffer to file
-    for line in lines:
-        fp.write(line)
+        # write entire buffer to file
+        for line in lines:
+            fp.write(line)
 
-    # close file
-    fp.close()
+        # close file
+        fp.close()
 
     # set buffer back to unmodified
-    global buffer_modified_
     buffer_modified_ = False
     return
 
@@ -87,10 +98,11 @@ def insert_text_into_buf(mode):
             continue
 
         buffer_modified_ = True
-        if mode == "i":
-            lines.insert(last_addr_ - 1, line + "\n")
-        elif mode == "a":
-            lines.insert(last_addr_, line + "\n")
+        lines.append(line + "\n")
+        # if mode == "i":
+        #     lines.insert(last_addr_ - 1, line + "\n")
+        # elif mode == "a":
+        #     lines.insert(last_addr_, line + "\n")
         last_addr_ = last_addr_ + 1
 
     return
@@ -112,6 +124,9 @@ def print_buffer():
     return
 
 def delete_lines():
+    global last_addr_
+    lines.pop(last_addr_ - 1)
+    last_addr_ = last_addr_ - 1
     return
 
 def parse_cmd_buf(buf):
@@ -119,27 +134,62 @@ def parse_cmd_buf(buf):
     global second_addr_
     global last_addr_
     global prompt_
+    global prompt_on_
     global file_name_
     global lines
 
     # prompt string
-    r = re.search(r"P (.*)$", buf)
+    r = re.search(r"P ([a-zA-Z0-9_].*)|P", buf)
     if r:
+        if not r.group(1):
+            if prompt_ == "":
+                prompt_ = "*"
+                prompt_on_ = not prompt_on_
+                return "P"
+            prompt_on_ = not prompt_on_
+            return "P"
         prompt_ = r.group(1)
+        prompt_on_ = not prompt_on_
         return "P"
 
     # edit this file
-    r = re.search(r"e (.*)$", buf)
+    buf = re.sub(r"\s+$", "", buf) # trim tailing whitespace
+    r = re.search(r"e (.*)$|e", buf)
     if r:
+        if not r.group(1): # if file is not specified
+            print("?")
+            return "e"
         lines = []
         file_name_ = r.group(1)
         return "e"
 
     # set file name
-    r = re.search(r"f (.*)$", buf)
+    buf = re.sub(r"\s+$", "", buf) # trim tailing whitespace
+    r = re.search(r"f (.*)$|f", buf)
     if r:
+        if not r.group(1): # if file is not specified
+            if file_name_ == "":
+                print("?")
+                return "f"
+            print(file_name_)
+            return "f"
         file_name_ = r.group(1)
         return "f"
+
+    # write to file
+    buf = re.sub(r"\s+$", "", buf) # trim tailing whitespace
+    r = re.search(r"w (.*)$|w", buf)
+    if r:
+        if not r.group(1) and file_name_ == "": # if file is not specified
+            print("?")
+            return "w"
+        file_name_ = r.group(1)
+        write_buf_to_file()
+        return "w"
+    
+    r = re.search(r"d", buf)
+    if r:
+        delete_lines()
 
     # parse things with two addresses
     r = re.search(r"([0-9].*),([0-9].*)([a-z].*$)", buf)
@@ -161,14 +211,13 @@ def parse_cmd_buf(buf):
     if r:
         first_addr_ = second_addr_ = last_addr_
         return r.group(1)
-    return ""
-    
+
 def main_loop():
     open_file_get_all_content_into_buf()
     global cmd_buf_
     global prompt_
     while(True):
-        cmd_buf_ = input(prompt_)
+        cmd_buf_ = input(prompt_ or last_addr_)
         c = parse_cmd_buf(cmd_buf_)
         if c == "a":
             insert_text_into_buf(c)
@@ -178,10 +227,8 @@ def main_loop():
             delete_lines()
         elif c == "p":
             print_buffer()
-        elif c == "P":
-            continue
-        elif c == "w" or c == "W":
-            write_buf_to_file()
+        # elif c == "w" or c == "W":
+        #     write_buf_to_file()
         elif c == "q" or c == "Q":
             if not buffer_modified_:
                 exit(0)
@@ -189,6 +236,8 @@ def main_loop():
             if confirm_quit == "q":
                 exit(0)
             else: cmd_buf_ = confirm_quit
+        elif c == "e" or c == "P" or c == "f" or c == "w":
+            continue
         else:
             print("?")
 
