@@ -159,14 +159,13 @@ def parse_cmd_buf(buf):
         return "P"
 
     # edit this file
-    buf = re.sub(r"\s+$", "", buf) # trim tailing whitespace
-    r = re.search(r"e (.*)$|e", buf)
+    r = re.search(r"e( *)(.*)$", buf)
     if r:
-        if not r.group(1): # if file is not specified
+        if r.group(2) == "": # if file is not specified
             print("?")
             return "e"
-        lines = []
-        file_name_ = r.group(1)
+        file_name_ = r.group(2)
+        open_file_get_all_content_into_buf()
         return "e"
 
     # set file name
