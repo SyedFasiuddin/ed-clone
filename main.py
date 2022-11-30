@@ -1,5 +1,6 @@
 import sys
 import re
+from pathlib import Path
 
 insert_mode_ = False    # default when ed starts
 buffer_modified_ = False    # empty buffer is started
@@ -45,19 +46,20 @@ def handel_command_line_args(argv):
 def open_file_get_all_content_into_buf():
     global lines
     global last_addr_
+    global file_name_
 
     if file_name_ != "":
-        try:
-            fp = open(file_name_, "r")
-            for line in fp:
-                lines.append(line)
-            fp.close()
-            last_addr_ = len(lines)
-        except:
-            # if file is not present thenn create
+        f = Path(file_name_)
+        lines = []
+        if f.exists():
+            print(f.stat().st_size)
+            l = f.read_text().split("\n")
+            for line in l:
+                lines.append(line + "\n")
+            lines.pop() # EOF trim
+            last_addr_ = len(lines) - 1 if len(lines) > 0 else 0
+        else:
             print("No such file or directory")
-            with open(file_name_, "w") as fp:
-                pass
     return
 
 def write_buf_to_file():
