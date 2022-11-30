@@ -197,6 +197,29 @@ def parse_cmd_buf(buf):
     if r:
         delete_lines()
 
+    # insert mode with addresses
+    r = re.search(r"^([0-9]*)i$", buf)
+    if r:
+        if r.group(1) == "":
+            return "i"
+        addr_ = int(r.group(1))
+        if addr_ == 0:
+            return ""
+        last_addr_ = addr_
+        return "i"
+
+    # append mode with addresses
+    r = re.search(r"^([0-9]*)a$", buf)
+    if r:
+        if r.group(1) == "":
+            return "a"
+        addr_ = int(r.group(1))
+        if addr_ == 0:
+            last_addr_ = -1
+            return "a"
+        last_addr_ = addr_
+        return "a"
+
     # parse things with two addresses
     r = re.search(r"([0-9].*),([0-9].*)([a-z].*$)", buf)
     if r:
