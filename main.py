@@ -245,19 +245,16 @@ def main_loop():
     open_file_get_all_content_into_buf()
     global cmd_buf_
     global prompt_
+
     while(True):
         cmd_buf_ = input(prompt_ if prompt_on_ else "")
         c = parse_cmd_buf(cmd_buf_)
-        if c == "a":
-            insert_text_into_buf(c)
-        elif c == "i":
+        if c == "a" or c == "i":
             insert_text_into_buf(c)
         elif c == "d":
             delete_lines()
         elif c == "p":
             print_buffer()
-        # elif c == "w" or c == "W":
-        #     write_buf_to_file()
         elif c == "q" or c == "Q":
             if not buffer_modified_:
                 exit(0)
@@ -265,7 +262,7 @@ def main_loop():
             if confirm_quit == "q":
                 exit(0)
             else: cmd_buf_ = confirm_quit
-        elif c == "e" or c == "P" or c == "f" or c == "w":
+        elif c == "P" or c == "e" or c == "f" or c == "w":
             continue
         else:
             print("?")
