@@ -64,12 +64,16 @@ def open_file_get_all_content_into_buf():
 
 def write_buf_to_file():
     global buffer_modified_
+    global file_name_
 
-    if not file_name_:
+    if file_name_ == "":
+        print("?")
         return
+
     # open file to write
-    print(file_name_)
-    with open(file_name_, "w") as fp:
+    f = Path(file_name_)
+    if f.exists():
+        fp = f.open("w")
         # clear everything in file
         fp.seek(0)
         fp.truncate()
