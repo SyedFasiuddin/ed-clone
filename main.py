@@ -246,7 +246,7 @@ def main_loop():
     global cmd_buf_
     global prompt_
     while(True):
-        cmd_buf_ = input(prompt_ or last_addr_)
+        cmd_buf_ = input(prompt_ if prompt_on_ else "")
         c = parse_cmd_buf(cmd_buf_)
         if c == "a":
             insert_text_into_buf(c)
