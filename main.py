@@ -181,13 +181,15 @@ def parse_cmd_buf(buf):
         return "f"
 
     # write to file
-    buf = re.sub(r"\s+$", "", buf) # trim tailing whitespace
-    r = re.search(r"w (.*)$|w", buf)
+    r = re.search(r"w( *)(.*)$", buf)
     if r:
-        if not r.group(1) and file_name_ == "": # if file is not specified
-            print("?")
+        if r.group(2) == "":
+            if file_name_ == "":
+                print("?")
+                return "w"
+            write_buf_to_file()
             return "w"
-        file_name_ = r.group(1)
+        file_name_ = r.group(2)
         write_buf_to_file()
         return "w"
     
