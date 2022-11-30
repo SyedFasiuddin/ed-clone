@@ -145,17 +145,17 @@ def parse_cmd_buf(buf):
     global lines
 
     # prompt string
-    r = re.search(r"P ([a-zA-Z0-9_].*)|P", buf)
+    r = re.search(r"P( *)(.*)$", buf)
     if r:
-        if not r.group(1):
+        if r.group(2) == "":
             if prompt_ == "":
                 prompt_ = "*"
                 prompt_on_ = not prompt_on_
                 return "P"
             prompt_on_ = not prompt_on_
             return "P"
-        prompt_ = r.group(1)
-        prompt_on_ = not prompt_on_
+        prompt_ = r.group(2)
+        prompt_on_ = prompt_on_ if prompt_on_ else not prompt_on_
         return "P"
 
     # edit this file
