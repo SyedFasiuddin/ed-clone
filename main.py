@@ -104,11 +104,11 @@ def insert_text_into_buf(mode):
             continue
 
         buffer_modified_ = True
-        lines.append(line + "\n")
-        # if mode == "i":
-        #     lines.insert(last_addr_ - 1, line + "\n")
-        # elif mode == "a":
-        #     lines.insert(last_addr_, line + "\n")
+        # lines.append(line + "\n")
+        if mode == "i":
+            lines.insert(last_addr_, line + "\n")
+        elif mode == "a":
+            lines.insert(last_addr_ + 1, line + "\n")
         last_addr_ = last_addr_ + 1
 
     return
