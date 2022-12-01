@@ -220,6 +220,20 @@ def parse_cmd_buf(buf):
         last_addr_ = addr_
         return "a"
 
+    # print
+    r = re.search(r"^([0-9]*)p$", buf)
+    if r:
+        if r.group(1) == "":
+            print(lines[last_addr_], end="")
+            return "p"
+        addr_ = int(r.group(1))
+        if addr_ == 0:
+            print("?")
+            return "p"
+        last_addr_ = addr_ - 1
+        print(lines[last_addr_], end="")
+        return "p"
+
     # parse things with two addresses
     r = re.search(r"([0-9].*),([0-9].*)([a-z].*$)", buf)
     if r:
@@ -241,6 +255,9 @@ def parse_cmd_buf(buf):
         first_addr_ = second_addr_ = last_addr_
         return r.group(1)
 
+    # default return
+    return ""
+
 def main_loop():
     open_file_get_all_content_into_buf()
     global cmd_buf_
@@ -253,8 +270,6 @@ def main_loop():
             insert_text_into_buf(c)
         elif c == "d":
             delete_lines()
-        elif c == "p":
-            print_buffer()
         elif c == "q" or c == "Q":
             if not buffer_modified_:
                 exit(0)
@@ -262,7 +277,7 @@ def main_loop():
             if confirm_quit == "q":
                 exit(0)
             else: cmd_buf_ = confirm_quit
-        elif c == "P" or c == "e" or c == "f" or c == "w":
+        elif c == "P" or c == "e" or c == "f" or c == "w" or c == "p":
             continue
         else:
             print("?")
